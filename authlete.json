@@ -1,0 +1,7 @@
+{
+    "baseUrl":               "https://api.authlete.com/api",
+    "serviceOwnerApiKey":    "<YOUR_SERVICE_OWNER_API_KEY>",
+    "serviceOwnerApiSecret": "<YOUR_SERVICE_OWNER_API_SECRET>",
+    "serviceApiKey":         "<YOUR_SERVICE_API_KEY>",
+    "serviceApiSecret":      "<YOUR_SERVICE_API_SECRET>"
+}
