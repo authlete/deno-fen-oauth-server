@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { AuthleteApiFactory, AuthorizationDecisionHandler, ContentType, User } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { AuthorizationDecisionHandler as Handler, ContentType, User } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 import { UserDao } from '../db/user_dao.ts';
-import { AuthorizationDecisionHandlerSpiImpl } from '../impl/authorization_decision_handler_spi_impl.ts';
+import { AuthorizationDecisionHandlerSpiImpl as SpiImpl } from '../impl/authorization_decision_handler_spi_impl.ts';
 import { badRequest, BaseEndpoint, Task } from './base_endpoint.ts';
-import Params = AuthorizationDecisionHandler.Params;
+import Params = Handler.Params;
 
 
 /**
@@ -121,30 +121,28 @@ export class AuthorizationDecisionEndpoint extends BaseEndpoint
             // The existing session.
             const session = this.context.data.get('session');
 
-            // The parameters passed to the 'handle' method of AuthorizationDecisionHandler.
+            // The parameters passed to the handler.
             const params: Params = takeAttribute(session, 'params', true);
 
-            // The end-user who authorized or denied the client application's request.
+            // The end-user who authorized or denied the client application's
+            // request.
             const user: User | null = getUser(session, reqBody);
 
             // The time when the end-user was authenticated.
             const authTime: Date | null = session.get('authTime');
 
-            // The ID Token claims requested by the client application. The value is a JSON string.
+            // The ID Token claims requested by the client application.
+            // The value is a JSON string.
             const idTokenClaims = params.idTokenClaims || null;
 
-            // The list of ACRs (Authentication Context Class References) requested
-            // by the client application.
+            // The list of ACRs (Authentication Context Class References)
+            // requested by the client application.
             const acrs: string[] | null = takeAttribute(session, 'acrs');
 
-            // Implementation of AuthorizationDecisionHandlerSpi.
-            const spi = new AuthorizationDecisionHandlerSpiImpl(reqBody, user, authTime, idTokenClaims, acrs);
-
-            // Authlete API client.
-            const api = await AuthleteApiFactory.getDefault();
-
             // Handle the request.
-            return await new AuthorizationDecisionHandler(api, spi).handle(params);
+            return await new Handler(
+                await this.getDefaultApi(), new SpiImpl(reqBody, user, authTime, idTokenClaims, acrs)
+            ).handle(params);
         }});
     }
 }

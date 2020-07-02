@@ -57,14 +57,32 @@ API クレデンシャルズを取得する手順はとても簡単です。
 
 この実装は、下表に示すエンドポイントを公開します。
 
-| エンドポイント        | パス                  |
-|:-------------------- |:---------------------|
-| 認可エンドポイント     | `/api/authorization` |
-| トークンエンドポイント | `/api/token`         |
+| エンドポイント | パス |
+|:--------------|:-----|
+| 認可エンドポイント | `/api/authorization` |
+| トークンエンドポイント | `/api/token` |
+| JWK Set エンドポイント | `/api/jwks` |
+| 設定エンドポイント | `/.well-known/openid-configuration` |
+| 取り消しエンドポイント  | `/api/revocation` |
+| イントロスペクションエンドポイント | `/api/introspection` |
 
 認可エンドポイントとトークンエンドポイントは、[RFC 6749][RFC6749]、[OpenID Connect Core 1.0][OIDCCore]、
 [OAuth 2.0 Multiple Response Type Encoding Practices][MultiResponseType]、
 [RFC 7636][RFC7636] ([PKCE][PKCE])、その他の仕様で説明されているパラメーター群を受け付けます。
+
+JWK Set エンドポイントは、クライアントアプリケーションが (1) この OpenID
+プロバイダーによる署名を検証できるようにするため、また (2) この OpenID
+へのリクエストを暗号化できるようにするため、JSON Web Key Set ドキュメント
+(JWK Set) を公開します。
+
+設定エンドポイントは、この OpenID プロバイダーの設定情報を
+[OpenID Connect Discovery 1.0][OIDCDiscovery] で定義されている JSON フォーマットで公開します。
+
+取り消しエンドポイントはアクセストークンやリフレッシュトークンを取り消すための
+Web API です。 その動作は [RFC 7009][RFC7009] で定義されています。
+
+イントロスペクションエンドポイントはアクセストークンやリフレッシュトークンの情報を取得するための
+Web API です。 その動作は [RFC 7662][RFC7662] で定義されています。
 
 認可リクエストの例
 ------------------
@@ -117,6 +135,9 @@ ID で置き換えてください。クライアントアプリケーション�
 [MultiResponseType]:      https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html
 [OIDC]:                   https://openid.net/connect/
 [OIDCCore]:               https://openid.net/specs/openid-connect-core-1_0.html
+[OIDCDiscovery]:          https://openid.net/specs/openid-connect-discovery-1_0.html
 [PKCE]:                   https://www.authlete.com/developers/pkce/
 [RFC6749]:                https://tools.ietf.org/html/rfc6749
+[RFC7009]:                https://tools.ietf.org/html/rfc7009
 [RFC7636]:                https://tools.ietf.org/html/rfc7636
+[RFC7662]:                https://tools.ietf.org/html/rfc7662
