@@ -14,7 +14,7 @@
 
 import { Response } from 'https://deno.land/std/http/server.ts';
 import { IContext } from 'https://deno.land/x/fen/server.ts';
-import { WebApplicationException } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { AuthleteApiFactory, WebApplicationException } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 
 
 /**
@@ -144,6 +144,19 @@ export class BaseEndpoint
     }
 
 
+    /**
+     * Get the default `AuthleteApi` instance.
+     */
+    protected async getDefaultApi()
+    {
+        return await AuthleteApiFactory.getDefault();
+    }
+
+
+    /**
+     * Ensure the value of `Content-Type` header in the request is the
+     * given `type`.
+     */
     protected ensureContentType(type: string)
     {
         // The 'Content-Type' request header.

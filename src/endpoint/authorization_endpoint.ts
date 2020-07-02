@@ -13,8 +13,8 @@
 // limitations under the License.
 
 import { ServerRequest } from 'https://deno.land/std/http/server.ts';
-import { AuthleteApiFactory, AuthorizationRequestHandler, ContentType } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
-import { AuthorizationRequestHandlerSpiImpl } from '../impl/authorization_request_handler_spi_impl.ts';
+import { AuthorizationRequestHandler as Handler, ContentType } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { AuthorizationRequestHandlerSpiImpl as SpiImpl } from '../impl/authorization_request_handler_spi_impl.ts';
 import { BaseEndpoint, Task } from './base_endpoint.ts';
 
 
@@ -38,8 +38,8 @@ function extractQueryParameters(request: ServerRequest): string | null
 
 
 /**
- * An implementation of OAuth 2.0 authorization endpoint with OpenID Connect support.
- * For more details, see the following links.
+ * An implementation of OAuth 2.0 authorization endpoint with OpenID
+ * Connect support. For more details, see the following links.
  *
  * - [RFC 6749, 3.1. Authorization Endpoint](
  * http://tools.ietf.org/html/rfc6749#section-3.1)
@@ -66,7 +66,7 @@ export class AuthorizationEndpoint extends BaseEndpoint
     {
         await this.process(<Task>{ execute: async () => {
             // Handle the request.
-            return await this.handle( extractQueryParameters(this.context.request) );
+            return await this.handle(extractQueryParameters(this.context.request));
         }});
     }
 
@@ -94,15 +94,10 @@ export class AuthorizationEndpoint extends BaseEndpoint
     }
 
 
-    private async handle(parameters: AuthorizationRequestHandler.parametersType)
+    private async handle(parameters: Handler.parametersType)
     {
-        // Implementation of AuthorizationRequestHandlerSpi.
-        const spi = new AuthorizationRequestHandlerSpiImpl(this.context);
-
-        // Authlete API client.
-        const api = await AuthleteApiFactory.getDefault();
-
-        // Handle the request.
-        return await new AuthorizationRequestHandler(api, spi).handle(parameters);
+        // Create a handler instance and process the parameters with it.
+        return await new Handler(await this.getDefaultApi(), new SpiImpl(this.context))
+            .handle(parameters);
     }
 }

@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { AuthleteApiFactory, ContentType, TokenRequestHandler } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
-import { TokenRequestHandlerSpiImpl } from '../impl/token_request_handler_spi_impl.ts';
+import { ContentType, TokenRequestHandler as Handler } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { TokenRequestHandlerSpiImpl as SpiImpl } from '../impl/token_request_handler_spi_impl.ts';
 import { BaseEndpoint, Task } from './base_endpoint.ts';
-import Params = TokenRequestHandler.Params;
+import Params = Handler.Params;
 
 
 /**
@@ -39,7 +39,7 @@ export class TokenEndpoint extends BaseEndpoint
      * access_token requests._
      *
      * [RFC 6749, 2.3. Client Authentication](
-     * http://tools.ietf.org/html/rfc6749#section-2.3) mentions (1) HTTP
+     * https://tools.ietf.org/html/rfc6749#section-2.3) mentions (1) HTTP
      * Basic Authentication and (2) `client_id` & `client_secret` parameters
      * in the request body as the means of client authentication. This
      * implementation supports the both means.
@@ -50,17 +50,9 @@ export class TokenEndpoint extends BaseEndpoint
             // Ensure the content type of the request is 'application/x-www-form-urlencoded'.
             this.ensureContentType(ContentType.APPLICATION_FORM_URLENCODED);
 
-            // Build parameters for TokenRequestHandler.
-            const params = this.buildParams();
-
-            // Implementation of TokenRequestHandlerSpi.
-            const spi = new TokenRequestHandlerSpiImpl();
-
-            // Authlete API client.
-            const api = await AuthleteApiFactory.getDefault();
-
             // Handle the request.
-            return await new TokenRequestHandler(api, spi).handle(params);
+            return await new Handler(await this.getDefaultApi(), new SpiImpl())
+                .handle(this.buildParams());
         }});
     }
 

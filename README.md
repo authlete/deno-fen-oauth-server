@@ -61,11 +61,28 @@ This implementation exposes endpoints as listed in the table below.
 |:-------------------------------------|:------------------------------------|
 | Authorization Endpoint               | `/api/authorization`                |
 | Token Endpoint                       | `/api/token`                        |
+| JWK Set Endpoint                     | `/api/jwks`                         |
+| Configuration Endpoint               | `/.well-known/openid-configuration` |
+| Revocation Endpoint                  | `/api/revocation`                   |
+| Introspection Endpoint               | `/api/introspection`                |
 
 The authorization endpoint and the token endpoint accept parameters described
 in [RFC 6749][RFC6749], [OpenID Connect Core 1.0][OIDCCore],
 [OAuth 2.0 Multiple Response Type Encoding Practices][MultiResponseType],
 [RFC 7636][RFC7636] ([PKCE][PKCE]) and other specifications.
+
+The JWK Set endpoint exposes a JSON Web Key Set document (JWK Set) so that
+client applications can (1) verify signatures signed by this OpenID Provider
+and (2) encrypt their requests to this OpenID Provider.
+
+The configuration endpoint exposes the configuration information of this OpenID
+Provider in the JSON format defined in [OpenID Connect Discovery 1.0][OIDCDiscovery].
+
+The revocation endpoint is a Web API to revoke access tokens and refresh
+tokens. Its behavior is defined in [RFC 7009][RFC7009].
+
+The introspection endpoint is a Web API to get information about access
+tokens and refresh tokens. Its behavior is defined in [RFC 7662][RFC7662].
 
 Authorization Request Example
 -----------------------------
@@ -119,6 +136,9 @@ Contact Form : https://www.authlete.com/contact/
 [MultiResponseType]:      https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html
 [OIDC]:                   https://openid.net/connect/
 [OIDCCore]:               https://openid.net/specs/openid-connect-core-1_0.html
+[OIDCDiscovery]:          https://openid.net/specs/openid-connect-discovery-1_0.html
 [PKCE]:                   https://www.authlete.com/developers/pkce/
 [RFC6749]:                https://tools.ietf.org/html/rfc6749
+[RFC7009]:                https://tools.ietf.org/html/rfc7009
 [RFC7636]:                https://tools.ietf.org/html/rfc7636
+[RFC7662]:                https://tools.ietf.org/html/rfc7662

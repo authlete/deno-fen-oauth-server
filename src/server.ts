@@ -17,6 +17,10 @@ import { Server } from 'https://deno.land/x/fen/server.ts';
 import { Router } from 'https://deno.land/x/fen/tool/router.ts';
 import { AuthorizationDecisionEndpoint } from './endpoint/authorization_decision_endpoint.ts';
 import { AuthorizationEndpoint } from './endpoint/authorization_endpoint.ts';
+import { ConfigurationEndpoint } from './endpoint/configuration_endpoint.ts';
+import { IntrospectionEndpoint } from './endpoint/introspection_endpoint.ts';
+import { JwksEndpoint } from './endpoint/jwks_endpoint.ts';
+import { RevocationEndpoint } from './endpoint/revocation_endpoint.ts';
 import { TokenEndpoint } from './endpoint/token_endpoint.ts';
 import { authleteProcess } from './process/authlete_process.ts';
 
@@ -32,10 +36,14 @@ server.addProcess(authleteProcess);
 
 // Set router.
 const router = new Router();
-router.get('/api/authorization',           async (context) => { await new AuthorizationEndpoint(context).get(); });
-router.post('/api/authorization',          async (context) => { await new AuthorizationEndpoint(context).post(); });
-router.post('/api/authorization/decision', async (context) => { await new AuthorizationDecisionEndpoint(context).post(); });
-router.post('/api/token',                  async (context) => { await new TokenEndpoint(context).post(); });
+router.get('/api/authorization',                async (context) => { await new AuthorizationEndpoint(context).get(); });
+router.post('/api/authorization',               async (context) => { await new AuthorizationEndpoint(context).post(); });
+router.post('/api/authorization/decision',      async (context) => { await new AuthorizationDecisionEndpoint(context).post(); });
+router.post('/api/token',                       async (context) => { await new TokenEndpoint(context).post(); });
+router.post('/api/introspection',               async (context) => { await new IntrospectionEndpoint(context).post(); });
+router.post('/api/revocation',                  async (context) => { await new RevocationEndpoint(context).post(); });
+router.get('/api/jwks',                         async (context) => { await new JwksEndpoint(context).get(); });
+router.get('/.well-known/openid-configuration', async (context) => { await new ConfigurationEndpoint(context).get(); });
 
 // Set controller.
 server.setController(router.controller);
