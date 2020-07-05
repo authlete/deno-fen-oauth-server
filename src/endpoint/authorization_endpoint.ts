@@ -14,11 +14,9 @@
 
 
 import { renderFileToString } from 'https://deno.land/x/dejs@0.7.0/mod.ts';
-import { AuthorizationDecisionHandler, AuthorizationPageModel, AuthorizationRequest, AuthorizationRequestErrorHandler,
-    AuthorizationResponse, isEmpty, isUndefined, NoInteractionHandler, normalizeParameters, okHtml,
-    Prompt, User } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { AuthorizationDecisionHandler, AuthorizationPageModel, AuthorizationRequest, AuthorizationRequestErrorHandler, AuthorizationResponse, isEmpty, isUndefined, NoInteractionHandler, normalizeParameters, okHtml, Prompt, User } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 import { NoInteractionHandlerSpiImpl } from '../impl/no_interaction_handler_spi_impl.ts';
-import { BaseEndpoint, extractQueryParameters } from './base_endpoint.ts';
+import { BaseEndpoint } from './base_endpoint.ts';
 import Action = AuthorizationResponse.Action;
 import Params = AuthorizationDecisionHandler.Params;
 
@@ -131,7 +129,7 @@ export class AuthorizationEndpoint extends BaseEndpoint
     public async get()
     {
         await this.process(async () => {
-            return await this.handle(extractQueryParameters(this.context.request));
+            return await this.handle(this.getQueryParameters());
         });
     }
 

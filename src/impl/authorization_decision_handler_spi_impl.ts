@@ -31,6 +31,9 @@ export class AuthorizationDecisionHandlerSpiImpl
     /**
      * The constructor.
      *
+     * @param session
+     *         The session associated with a request.
+     *
      * @param clientAuthorized
      *         The flag to indicate whether the client application is
      *         authorized or not by the end-user.

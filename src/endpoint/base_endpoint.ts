@@ -13,28 +13,9 @@
 // limitations under the License.
 
 
-import { Response, ServerRequest } from 'https://deno.land/std/http/server.ts';
+import { Response } from 'https://deno.land/std/http/server.ts';
 import { IContext } from 'https://deno.land/x/fen/server.ts';
 import { AuthleteApi, badRequest, ContentType, internalServerError } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
-
-
-/**
- * Extract query parameters from the request.
- */
-export function extractQueryParameters(request: ServerRequest): string | null
-{
-    // The proto of the request.
-    const proto = request.proto.split('/')[0].toLowerCase();
-
-    // The host of the request.
-    const host = request.headers.get('host')!;
-
-    // Create a URL instance.
-    const url = new URL(`${proto}://${host}${request.url}`);
-
-    // The query parameter part of the URL without '?'.
-    return url.search.slice(1);
-}
 
 
 /**
@@ -133,7 +114,7 @@ export class BaseEndpoint
         this.setupResponseHeaders(response);
 
         // Send the response.
-        this.context.request.respond(response);
+        this.getRequest().respond(response);
     }
 
 
@@ -182,26 +163,65 @@ export class BaseEndpoint
 
 
     /**
+     * Get the current request.
+     *
+     * This method returns the value returned by `this.context.request`;
+     */
+    protected getRequest()
+    {
+        return this.context.request;
+    }
+
+
+    /**
+     * Get query parameters from the current request.
+     */
+    protected getQueryParameters()
+    {
+        // The proto of the request.
+        const proto = this.getRequest().proto.split('/')[0].toLowerCase();
+
+        // The host of the request.
+        const host = this.getRequestHeaders().get('host')!;
+
+        // Create a URL instance.
+        const url = new URL(`${proto}://${host}${this.getRequest().url}`);
+
+        // The query parameter part of the URL without '?'.
+        return url.search.slice(1);
+    }
+
+
+    /**
+     * Get the headers of the current request.
+     *
+     * This method returns the value returned by `this.getRequest().headers`;
+     */
+    protected getRequestHeaders()
+    {
+        return this.getRequest().headers;
+    }
+
+
+    /**
      * Get the value of the `Content-Type` request header.
      *
-     * This method returns the value returned by
-     * `this.context.request.headers.get('Content-Type')`;
+     * This method returns the value returned by `this.getRequestHeaders().get('Content-Type')`;
      */
     protected getRequestContentType()
     {
-        return this.context.request.headers.get('Content-Type');
+        return this.getRequestHeaders().get('Content-Type');
     }
 
 
     /**
      * Get the value of the `Authorization` request header.
      *
-     * This method returns the value returned by
-     * `this.context.request.headers.get('Authorization')`;
+     * This method returns the value returned by `this.getRequestHeaders().get('Authorization')`;
      */
     protected getAuthorization()
     {
-        return this.context.request.headers.get('Authorization');
+        return this.getRequestHeaders().get('Authorization');
     }
 
 

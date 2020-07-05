@@ -25,6 +25,12 @@ export class AuthorizationRequestHandlerSpiImpl extends AuthorizationRequestHand
     private session: Map<string, any>;
 
 
+    /**
+     * The constructor.
+     *
+     * @param session
+     *         The session associated with a request.
+     */
     constructor(session: Map<string, any>)
     {
         super();
