@@ -12,8 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { BasicCredentials, buildResponse, ContentType, IntrospectionRequestHandler as Handler, Status } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
-import { BaseEndpoint, Task } from './base_endpoint.ts';
+
+import { BasicCredentials, IntrospectionRequestHandler as Handler, unauthorized } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { BaseEndpoint } from './base_endpoint.ts';
+
+
+/**
+ * The value for `WWW-Authenticate` header on `'401 Unauthorized'`.
+ */
+const CHALLENGE = 'Basic realm="/api/introspection"';
 
 
 /**
@@ -30,10 +37,7 @@ export class IntrospectionEndpoint extends BaseEndpoint
      */
     public async post()
     {
-        await this.process(<Task>{ execute: async () => {
-            // Ensure the content type of the request is 'application/x-www-form-urlencoded'.
-            this.ensureContentType(ContentType.APPLICATION_FORM_URLENCODED);
-
+        await this.processForApplicationFormUrlEncoded(async () => {
             // "2.1. Introspection Request" in RFC 7662 says as follows:
             //
             //   To prevent token scanning attacks, the endpoint MUST also require
@@ -47,40 +51,30 @@ export class IntrospectionEndpoint extends BaseEndpoint
             // Therefore, this API must be protected in some way or other.
             // Basic Authentication and Bearer Token are typical means, and
             // both use the value of the 'Authorization' header.
-            //
-            // Authenticate the API caller.
-            const authenticated = this.authenticateApiCaller();
 
             // Return a response of "401 Unauthorized" if the API caller
             // does not have necessary privileges to call this API.
-            if (!authenticated) return buildResponse(Status.UNAUTHORIZED);
+            if (!this.authenticateApiCaller()) return unauthorized(CHALLENGE);
 
             // Handle the request.
-            return await new Handler(await this.getDefaultApi())
-                .handle( this.context.reqBody as { [key: string]: string } );
-        }});
+            return await new Handler(this.api)
+                .handle(this.getRequestBodyAsObject());
+        });
     }
 
 
     private authenticateApiCaller()
     {
-        //
         // TODO: This implementation is for demonstration purpose only.
-        //
 
-        // The value in the authorization header.
-        const authorization = this.context.request.headers.get('Authorization');
+        // Parse the value of the 'Authorization' request header as
+        // credentials.
+        const credentials = BasicCredentials.parse(this.getAuthorization());
 
-        // Parse it as credentials.
-        const credentials = BasicCredentials.parse(authorization);
-
-        // Reject if no credentials is contained in the authorization header.
-        if (!credentials) return false;
-
-        // Reject if the user ID is 'nobody'.
-        if (credentials.userId === 'nobody') return false;
-
-        // OK. The API caller is authenticated.
-        return true;
+        // In this implementation, a user is authenticated when the user
+        // ID exists and the value is not 'nobody'.
+        return credentials &&
+               credentials.userId &&
+               credentials.userId !== 'nobody';
     }
 }

@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 import { Session } from 'https://deno.land/x/fen/process/session.ts';
 import { Server } from 'https://deno.land/x/fen/server.ts';
 import { Router } from 'https://deno.land/x/fen/tool/router.ts';
+import { AuthleteApiFactory } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 import { AuthorizationDecisionEndpoint } from './endpoint/authorization_decision_endpoint.ts';
 import { AuthorizationEndpoint } from './endpoint/authorization_endpoint.ts';
 import { ConfigurationEndpoint } from './endpoint/configuration_endpoint.ts';
@@ -28,30 +30,29 @@ import { authleteProcess } from './process/authlete_process.ts';
 // Server instance.
 const server = new Server();
 
-// Enable session process.
+// Process.
 server.addProcess(new Session().process);
-
-// Enable the custom process.
 server.addProcess(authleteProcess);
 
-// Set router.
+// Router.
 const router = new Router();
-router.get('/api/authorization',                async (context) => { await new AuthorizationEndpoint(context).get(); });
-router.post('/api/authorization',               async (context) => { await new AuthorizationEndpoint(context).post(); });
-router.post('/api/authorization/decision',      async (context) => { await new AuthorizationDecisionEndpoint(context).post(); });
-router.post('/api/token',                       async (context) => { await new TokenEndpoint(context).post(); });
-router.post('/api/introspection',               async (context) => { await new IntrospectionEndpoint(context).post(); });
-router.post('/api/revocation',                  async (context) => { await new RevocationEndpoint(context).post(); });
-router.get('/api/jwks',                         async (context) => { await new JwksEndpoint(context).get(); });
-router.get('/.well-known/openid-configuration', async (context) => { await new ConfigurationEndpoint(context).get(); });
+const api = await AuthleteApiFactory.getDefault();
+router.get('/api/authorization',                async (context) => { await new AuthorizationEndpoint(api, context).get(); });
+router.post('/api/authorization',               async (context) => { await new AuthorizationEndpoint(api, context).post(); });
+router.post('/api/authorization/decision',      async (context) => { await new AuthorizationDecisionEndpoint(api, context).post(); });
+router.post('/api/token',                       async (context) => { await new TokenEndpoint(api, context).post(); });
+router.post('/api/introspection',               async (context) => { await new IntrospectionEndpoint(api, context).post(); });
+router.post('/api/revocation',                  async (context) => { await new RevocationEndpoint(api, context).post(); });
+router.get('/api/jwks',                         async (context) => { await new JwksEndpoint(api, context).get(); });
+router.get('/.well-known/openid-configuration', async (context) => { await new ConfigurationEndpoint(api, context).get(); });
 
-// Set controller.
+// Controller.
 server.setController(router.controller);
 
-// Set logger.
+// Logger.
 server.logger.changeLevel('INFO');
 
-// Set port.
+// Port.
 server.port = 1902;
 
 // Start the server.

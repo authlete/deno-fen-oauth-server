@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 import { ConfigurationRequestHandler as Handler } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
-import { BaseEndpoint, Task } from './base_endpoint.ts';
+import { BaseEndpoint } from './base_endpoint.ts';
 
 
 /**
@@ -53,9 +54,8 @@ export class ConfigurationEndpoint extends BaseEndpoint
      */
     public async get()
     {
-        await this.process(<Task>{ execute: async () => {
-            // Handle the request.
-            return await new Handler(await this.getDefaultApi()).handle(true);
-        }});
+        await this.process(async () => {
+            return await new Handler(this.api).handle(true);
+        });
     }
 }

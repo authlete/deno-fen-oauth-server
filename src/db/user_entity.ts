@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 import { Address, isEmpty, StandardClaims, User } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 
 
@@ -31,10 +32,7 @@ export class UserEntity implements User
 
     public getClaim(claimName: string, languageTag?: string): any
     {
-        if (isEmpty(claimName))
-        {
-            return null;
-        }
+        if (isEmpty(claimName)) return null;
 
         switch(claimName)
         {
