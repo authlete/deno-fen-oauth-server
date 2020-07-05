@@ -12,28 +12,92 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { ServerRequest } from 'https://deno.land/std/http/server.ts';
-import { AuthorizationRequestHandler as Handler, ContentType } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
-import { AuthorizationRequestHandlerSpiImpl as SpiImpl } from '../impl/authorization_request_handler_spi_impl.ts';
-import { BaseEndpoint, Task } from './base_endpoint.ts';
+
+import { renderFileToString } from 'https://deno.land/x/dejs@0.7.0/mod.ts';
+import { AuthorizationDecisionHandler, AuthorizationPageModel, AuthorizationRequest, AuthorizationRequestErrorHandler, AuthorizationResponse, isEmpty, isUndefined, NoInteractionHandler, normalizeParameters, okHtml, Prompt, User } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { NoInteractionHandlerSpiImpl } from '../impl/no_interaction_handler_spi_impl.ts';
+import { BaseEndpoint } from './base_endpoint.ts';
+import Action = AuthorizationResponse.Action;
+import Params = AuthorizationDecisionHandler.Params;
 
 
 /**
- * Extract query parameters from the request.
+ * The type of 'parameters' parameter passed to the `handle` method
+ * in `AuthorizationRequestHandler`.
  */
-function extractQueryParameters(request: ServerRequest): string | null
+export type parametersType = string | { [key: string]: string } | null;
+
+
+function clearUserDataIfNecessary(info: AuthorizationResponse, session: Map<string, any>)
 {
-    // The proto of the request.
-    const proto = request.proto.split('/')[0].toLowerCase();
+    // Get the user info from the session.
+    const user     = session.get('user');
+    const authTime = session.get('authTime');
 
-    // The host of the request.
-    const host = request.headers.get('host')!;
+    // No check is needed if the user info does not exist in the session.
+    if (isUndefined(user) || isUndefined(authTime)) return;
 
-    // Create a URL instance.
-    const url = new URL(`${proto}://${host}${request.url}`);
+    // Check 'prompts'.
+    checkPrompts(info, session);
 
-    // The query parameter part of the URL without '?'.
-    return url.search.slice(1);
+    // Check 'authentication age'.
+    checkAuthenticationAge(info, session, authTime);
+}
+
+
+function checkPrompts(info: AuthorizationResponse, session: Map<string, any>)
+{
+    // If no prompt is requested.
+    if (isEmpty(info.prompts)) return;
+
+    // If 'login' prompt is requested.
+    if (info.prompts!.includes(Prompt.LOGIN))
+    {
+        // Force a login by clearing out the current user.
+        clearUserData(session);
+    }
+}
+
+
+function checkAuthenticationAge(
+    info: AuthorizationResponse, session: Map<string, any>, authTime: Date)
+{
+    // No check is needed if the maximum authentication age is not a
+    // positive number.
+    if (info.maxAge <= 0) return;
+
+    // Calculate number of seconds that have elapsed since login.
+    const now     = new Date();
+    const authAge = Math.round( (now.getTime() - authTime.getTime()) / 1000 );
+
+    if (authAge > info.maxAge)
+    {
+        // Session age is too old, clear out the current user data.
+        clearUserData(session);
+    }
+}
+
+
+function clearUserData(session: Map<string, any>)
+{
+    session.delete('user');
+    session.delete('authTime');
+}
+
+
+/**
+ * The ejs file for the authorization page.
+ */
+const AUTHORIZATION_PAGE = './rsc/ejs/authorization.ejs';
+
+
+async function renderAuthorizationPage(info: AuthorizationResponse, user: User)
+{
+    // The model for rendering the authorization page.
+    const model = new AuthorizationPageModel(info, user);
+
+    // Render the authorization page as string.
+    return await renderFileToString(AUTHORIZATION_PAGE, { model: model })
 }
 
 
@@ -64,10 +128,9 @@ export class AuthorizationEndpoint extends BaseEndpoint
      */
     public async get()
     {
-        await this.process(<Task>{ execute: async () => {
-            // Handle the request.
-            return await this.handle(extractQueryParameters(this.context.request));
-        }});
+        await this.process(async () => {
+            return await this.handle(this.getQueryParameters());
+        });
     }
 
 
@@ -84,20 +147,99 @@ export class AuthorizationEndpoint extends BaseEndpoint
      */
     public async post()
     {
-        await this.process(<Task>{ execute: async () => {
-            // Ensure the content type of the request is 'application/x-www-form-urlencoded'.
-            this.ensureContentType(ContentType.APPLICATION_FORM_URLENCODED);
-
-            // Handle the request.
-            return await this.handle( this.context.reqBody as { [key: string]: string } );
-        }});
+        await this.processForApplicationFormUrlEncoded(async () => {
+            return await this.handle(this.getRequestBodyAsObject());
+        });
     }
 
 
-    private async handle(parameters: Handler.parametersType)
+    private async handle(parameters: parametersType)
     {
-        // Create a handler instance and process the parameters with it.
-        return await new Handler(await this.getDefaultApi(), new SpiImpl(this.context))
-            .handle(parameters);
+        // Call Authlete /api/auth/authorization API.
+        const response = await this.callAuthorization(parameters);
+
+        // Dispatch according to the action.
+        switch (response.action)
+        {
+            case Action.INTERACTION:
+                // Process the authorization request with user interaction.
+                return await this.handleInteraction(response);
+
+            case Action.NO_INTERACTION:
+                // Process the authorization request without user interaction.
+                // The flow reaches here only when the authorization request
+                // contained prompt=none.
+                return await this.handleNoInteraction(response);
+
+            default:
+                // Handle other error cases here.
+                return await this.handleError(response);
+        }
+    }
+
+
+    /**
+     * Call Authlete `/api/auth/authorization` API.
+     */
+    private async callAuthorization(parameters: parametersType)
+    {
+        // Create a request for Authlete /api/auth/authorization API.
+        const request = new AuthorizationRequest();
+
+        // Normalize parameters.
+        request.parameters = normalizeParameters(parameters);
+
+        // Call Authlete /api/auth/authorization API.
+        return await this.api.authorization(request);
+    }
+
+
+    /**
+     * Handle the case where `action` parameter in a response from
+     * Authlete `/api/auth/authorization` API is `INTERACTION`.
+     */
+    private async handleInteraction(info: AuthorizationResponse)
+    {
+        // Set parameters to the session for later use.
+        const session = this.getSession();
+        session.set('params', Params.from(info));
+        session.set('acrs',   info.acrs);
+        session.set('client', info.client);
+
+        // Clear the current user info in the session if needed.
+        clearUserDataIfNecessary(info, session);
+
+        // Render the authorization page.
+        const authorizationPage =
+            await renderAuthorizationPage(info, session.get('user') as User);
+
+        // Return a response of '200 OK' with the authorization page.
+        return okHtml(authorizationPage);
+    }
+
+
+    /**
+     * Handle the case where `action` parameter in a response from
+     * Authlete `/api/auth/authorization` API is `NO_INTERACTION`.
+     */
+    private async handleNoInteraction(response: AuthorizationResponse)
+    {
+        return await new NoInteractionHandler(
+            this.api, new NoInteractionHandlerSpiImpl(this.getSession())
+        ).handle(response);
+    }
+
+
+    /**
+     * Handle cases where `action` parameter in a response from Authlete
+     * `/api/auth/authorization` API is other than `INTERACTION` or
+     * `NO_INTERACTION`.
+     */
+    private async handleError(response: AuthorizationResponse)
+    {
+        // Make AuthorizationRequestErrorHandler handle the
+        // error case.
+        return await new AuthorizationRequestErrorHandler()
+            .handle(response);
     }
 }

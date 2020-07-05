@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Property, TokenRequestHandlerSpiAdapter } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+
+import { TokenRequestHandlerSpiAdapter } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 import { UserDao } from '../db/user_dao.ts';
 
 
@@ -23,24 +24,17 @@ import { UserDao } from '../db/user_dao.ts';
  */
 export class TokenRequestHandlerSpiImpl extends TokenRequestHandlerSpiAdapter
 {
-    public authenticateUser(username: string | null, password: string | null): string | null
+    public authenticateUser(
+        username: string | null, password: string | null): string | null
     {
-        // Note: this method needs to be implemented only when you
-        // want to support 'Resource Owner Password Credentials Grant'.
+        // Note: this method needs to be implemented only when you want
+        // to support 'Resource Owner Password Credentials Grant' flow
+        // (RFC 6749, 4.3).
 
         // Search the user database for a user.
         const user = UserDao.getByCredentials(username, password);
 
         // If the user was found, return the subject of the user.
-        return user ? user.subject! : null;
-    }
-
-
-    public getProperties(): Property[] | null
-    {
-        // Properties returned from this method will be associated with
-        // an access token that will be issued as a result of the token
-        // request.
-        return null;
+        return user ? user.subject : null;
     }
 }

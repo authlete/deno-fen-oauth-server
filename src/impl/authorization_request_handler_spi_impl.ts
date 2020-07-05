@@ -12,152 +12,71 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Response } from 'https://deno.land/std/http/server.ts';
-import { renderFileToString } from 'https://deno.land/x/dejs@0.7.0/mod.ts';
-import { IContext } from 'https://deno.land/x/fen/server.ts';
-import { AuthorizationDecisionHandler, AuthorizationPageModel, AuthorizationRequestHandlerSpiAdapter, AuthorizationResponse, isEmpty, Prompt, User } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
-import Params = AuthorizationDecisionHandler.Params;
+
+import { AuthorizationRequestHandlerSpiAdapter } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { UserEntity } from '../db/user_entity.ts';
 
 
 /**
- * The ejs file for the authorization page.
- */
-const AUTHORIZATION_PAGE = './rsc/ejs/authorization.ejs';
-
-
-function clearCurrentUserInfoInSessionIfNecessary(info: AuthorizationResponse, session: Map<string, any>)
-{
-    // Get the user info from the session if present.
-    const user     = session.get('user');
-    const authTime = session.get('authTime');
-
-    if (user && authTime)
-    {
-        // Check 'prompts'.
-        checkPrompts(info, session);
-
-        // Check 'authentication age'.
-        checkAuthenticationAge(info, session, authTime);
-    }
-}
-
-
-function checkPrompts(info: AuthorizationResponse, session: Map<string, any>)
-{
-    // If no prompt is requested.
-    if (isEmpty(info.prompts)) return;
-
-    // If 'login' prompt is requested.
-    if (info.prompts!.includes(Prompt.LOGIN))
-    {
-        // Force a login by clearing out the current user.
-        clearCurrentUserInfoInSession(session);
-    }
-}
-
-
-function checkAuthenticationAge(
-    info: AuthorizationResponse, session: Map<string, any>, authTime: Date)
-{
-    // TODO: 'info.maxAge' is always a number (it can't be 'undefined').
-    const maxAge = info.maxAge!;
-
-    // TODO: max_age == 0 effectively means "log in the user interactively
-    // now" but it's used here as a flag, we should fix this to use Integer
-    // instead of int probably.
-    if (maxAge <= 0) return;
-
-    // Calculate number of seconds that have elapsed since login.
-    const now = new Date();
-    const authAge = Math.round( (now.getTime() - authTime.getTime()) / 1000 );
-
-    if (authAge > maxAge)
-    {
-        // Session age is too old, clear out the current user.
-        clearCurrentUserInfoInSession(session);
-    }
-}
-
-
-function clearCurrentUserInfoInSession(session: Map<string, any>)
-{
-    session.delete('user');
-    session.delete('authTime');
-}
-
-
-/**
- * Implementation of `AuthorizationHandlerSpi` interface.
- *
- * This is supposed to be given to the constructor of `AuthorizationHandler`.
+ * Implementation of `AuthorizationDecisionHandlerSpi` interface.
  */
 export class AuthorizationRequestHandlerSpiImpl extends AuthorizationRequestHandlerSpiAdapter
 {
-    /**
-     * The context.
-     */
-    private context: IContext;
+    private session: Map<string, any>;
 
 
     /**
-     * The constructor
+     * The constructor.
      *
-     * @param context - The context.
+     * @param session
+     *         The session associated with a request.
      */
-    public constructor(context: IContext)
+    constructor(session: Map<string, any>)
     {
         super();
 
-        this.context = context;
+        this.session = session;
     }
 
 
-    public isUserAuthenticated(): boolean
+    public getUserClaimValue(subject: string, claimName: string, languageTag?: string): any
     {
-        return this.context.data.get('session').has('user');
+        // Return null if 'user' doesn't exist in the session.
+        if (!this.session.has('user')) return null;
+
+        // Get the user entity from the session.
+        const user = this.session.get('user') as UserEntity;
+
+        // Return the claim value.
+        return user.getClaim(claimName, languageTag);
     }
 
 
     public getUserAuthenticatedAt(): number
     {
-        // Get the authentication time from the session.
-        const authTime = this.context.data.get('session').get('authTime');
+        // Return 0 if 'user' and 'authTime' don't exist in the session.
+        if (!this.session.has('user') || !this.session.has('authTime'))
+        {
+            return 0;
+        }
 
-        return authTime ? Math.round( authTime.getTime() / 1000 ) : 0;
+        // Get the authentication time from the session.
+        const authTime = this.session.get('authTime') as Date;
+
+        // Return the authentication time in seconds.
+        return Math.round( authTime.getTime() / 1000 );
     }
 
 
     public getUserSubject(): string | null
     {
-        // Get the authenticated user from the session.
-        const user = this.context.data.get('session').get('user');
+        // Return null if 'user' doesn't exist in the session.
+        if (!this.session.has('user')) return null;
 
-        return user ? user.subject : null;
-    }
+        // Get the user entity from the session.
+        const user = this.session.get('user') as UserEntity;
 
-
-    public async generateAuthorizationPage(info: AuthorizationResponse): Promise<Response>
-    {
-        // The current session.
-        const session = this.context.data.get('session');
-
-        // Set parameters to the session for later use.
-        session.set('params', Params.from(info));
-        session.set('acrs', info.acrs);
-        session.set('client', info.client);
-
-        // Clear the current user info in the session if needed.
-        clearCurrentUserInfoInSessionIfNecessary(info, session);
-
-        // Prepare a model object for building the authorization page.
-        const user  = session.get('user') as User;
-        const model = new AuthorizationPageModel(info, user);
-
-        // Create a '200 OK' response having the authorization page.
-        return {
-            status: 200,
-            headers: new Headers({ 'Content-Type': 'text/html' }),
-            body: await renderFileToString(AUTHORIZATION_PAGE, { model: model })
-        };
+        // The subject (= unique identifier) of the end-user.
+        return user.subject;
     }
 }

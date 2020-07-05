@@ -12,17 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 import { Response } from 'https://deno.land/std/http/server.ts';
 import { IContext } from 'https://deno.land/x/fen/server.ts';
-import { AuthleteApiFactory, WebApplicationException } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { AuthleteApi, badRequest, ContentType, internalServerError } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 
 
 /**
- * Interface for a task to be executed in endpoints.
+ * Execute a task.
  */
-export interface Task
+async function executeTask(task: () => Promise<Response>): Promise<Response>
 {
-    execute(): Promise<Response>
+    try
+    {
+        // Execute the task.
+        return await task();
+    }
+    catch (e)
+    {
+        // Log the error.
+        console.log(e);
+
+        // Return a response of '500 Internal Server Error'.
+        return internalServerError('Something went wrong.');
+    }
 }
 
 
@@ -42,26 +55,16 @@ function appendHeaders(targetHeaders: Headers, sourceHeaders?: Headers)
 
 
 /**
- * Create a WebApplicationException instance of '400 BadRequest'
- * with the given body content.
- */
-export function badRequest(body: string)
-{
-    const response: Response = {
-        status: 400,
-        headers: new Headers({ 'Content-Type': 'text/plain;charset=UTF8' }),
-        body: body
-    };
-
-    return new WebApplicationException(response);
-}
-
-
-/**
  * Base endpoint.
  */
 export class BaseEndpoint
 {
+    /**
+     * The implementation of `AuthleteApi` interface.
+     */
+    protected api: AuthleteApi;
+
+
     /**
      * The context
      */
@@ -70,9 +73,17 @@ export class BaseEndpoint
 
     /**
      * The constructor.
+     *
+     * @params api
+     *          An implementation of `AuthleteApi` interface.
+     *
+     * @param context
+     *         A Fen's context object.
      */
-    public constructor(context: any)
+    public constructor(api: AuthleteApi, context: IContext)
     {
+        this.api = api;
+
         this.context = context;
     }
 
@@ -80,31 +91,15 @@ export class BaseEndpoint
     /**
      * Process a task.
      *
-     * @param task - A task to be processed at this endpoint.
+     * @param task
+     *         A task to be processed at this endpoint. The task must
+     *         return a Promise containing an instance of Deno's standard
+     *         `Response` class (defined in https://deno.land/std/http/server.ts).
      */
-    protected async process(task: Task): Promise<void>
+    protected async process(task: () => Promise<Response>): Promise<void>
     {
-        try
-        {
-            // Execute the task.
-            const response = await task.execute();
-
-            // Handle the response info.
-            this.handleResponse(response);
-        }
-        catch (e)
-        {
-            if (e instanceof WebApplicationException)
-            {
-                // Set the unexpected error to the body.
-                this.handleResponse(e.response);
-            }
-            else
-            {
-                // This won't happen.
-                throw e;
-            }
-        }
+        // Execute the task and handle the resultant response.
+        this.handleResponse( await executeTask(task) );
     }
 
 
@@ -119,7 +114,7 @@ export class BaseEndpoint
         this.setupResponseHeaders(response);
 
         // Send the response.
-        this.context.request.respond(response);
+        this.getRequest().respond(response);
     }
 
 
@@ -145,27 +140,122 @@ export class BaseEndpoint
 
 
     /**
-     * Get the default `AuthleteApi` instance.
+     * Get the request body as `{ [key: string]: string }`.
+     *
+     * This method returns the value returned by
+     * `this.context.reqBody as { [key: string]: string }`;
      */
-    protected async getDefaultApi()
+    protected getRequestBodyAsObject()
     {
-        return await AuthleteApiFactory.getDefault();
+        return this.context.reqBody as { [key: string]: string };
     }
 
 
     /**
-     * Ensure the value of `Content-Type` header in the request is the
-     * given `type`.
+     * Get the session associated with the current request.
+     *
+     * This method returns the value returned by `this.context.data.get('session')`;
      */
-    protected ensureContentType(type: string)
+    protected getSession()
     {
-        // The 'Content-Type' request header.
-        const contentType = this.context.request.headers.get('Content-Type');
+        return this.context.data.get('session');
+    }
 
-        if (contentType !== type)
-        {
-            // Throw a 400 Bad Request Error.
-            throw badRequest(`'Content-Type' header must be set to '${type}'.`);
-        }
+
+    /**
+     * Get the current request.
+     *
+     * This method returns the value returned by `this.context.request`;
+     */
+    protected getRequest()
+    {
+        return this.context.request;
+    }
+
+
+    /**
+     * Get query parameters from the current request.
+     */
+    protected getQueryParameters()
+    {
+        // The proto of the request.
+        const proto = this.getRequest().proto.split('/')[0].toLowerCase();
+
+        // The host of the request.
+        const host = this.getRequestHeaders().get('host')!;
+
+        // Create a URL instance.
+        const url = new URL(`${proto}://${host}${this.getRequest().url}`);
+
+        // The query parameter part of the URL without '?'.
+        return url.search.slice(1);
+    }
+
+
+    /**
+     * Get the headers of the current request.
+     *
+     * This method returns the value returned by `this.getRequest().headers`;
+     */
+    protected getRequestHeaders()
+    {
+        return this.getRequest().headers;
+    }
+
+
+    /**
+     * Get the value of the `Content-Type` request header.
+     *
+     * This method returns the value returned by `this.getRequestHeaders().get('Content-Type')`;
+     */
+    protected getRequestContentType()
+    {
+        return this.getRequestHeaders().get('Content-Type');
+    }
+
+
+    /**
+     * Get the value of the `Authorization` request header.
+     *
+     * This method returns the value returned by `this.getRequestHeaders().get('Authorization')`;
+     */
+    protected getAuthorization()
+    {
+        return this.getRequestHeaders().get('Authorization');
+    }
+
+
+    /**
+     * Execute a task after ensuring that the value of the `Content-Type`
+     * request header is `application/x-www-form-urlencoded`.
+     *
+     * If the content type is wrong, a response of `'400 BadRequest'`
+     * is returned to the end-user.
+     */
+    protected async processForApplicationFormUrlEncoded(task: () => Promise<Response>)
+    {
+        await this.processForContentType(ContentType.APPLICATION_FORM_URLENCODED, task);
+    }
+
+
+    /**
+     * Execute a task after ensuring that the content type of the request
+     * is the target one.
+     *
+     * If the content type is wrong, a response of `'400 BadRequest'`
+     * is returned to the end-user.
+     */
+    private async processForContentType(type: string, task: () => Promise<Response>)
+    {
+        await this.process(async () => {
+            // Check the request content type.
+            if (this.getRequestContentType() !== type)
+            {
+                return badRequest(`Request 'Content-Type' must be '${type}'.`);
+            }
+
+            // Then, execute the task.
+            return await task();
+        });
     }
 }

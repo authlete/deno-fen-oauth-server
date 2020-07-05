@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { AuthorizationDecisionHandler as Handler, ContentType, User } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+
+import { AuthorizationDecisionHandler as Handler, badRequest, User } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 import { UserDao } from '../db/user_dao.ts';
 import { AuthorizationDecisionHandlerSpiImpl as SpiImpl } from '../impl/authorization_decision_handler_spi_impl.ts';
-import { badRequest, BaseEndpoint, Task } from './base_endpoint.ts';
+import { BaseEndpoint } from './base_endpoint.ts';
 import Params = Handler.Params;
 
 
@@ -25,30 +26,18 @@ import Params = Handler.Params;
  * be thrown if `throwErrorOnKeyMissing` is set to true. Otherwise,
  * `null` is returned.
  */
-function takeAttribute(
-    session: Map<string, any>, key: string, throwErrorOnKeyMissing = false): any
+function takeAttribute(session: Map<string, any>, key: string)
 {
-    if (session.has(key))
-    {
-        // Retrieve the value from the session.
-        const value = session.get(key);
+    if (!session.has(key)) return null;
 
-        // Remove the attribute from the session.
-        session.delete(key);
+    // Retrieve the value from the session.
+    const value = session.get(key);
 
-        // Return the value.
-        return value;
-    }
+    // Remove the attribute from the session.
+    session.delete(key);
 
-    // No such key exists in the session.
-
-    if (throwErrorOnKeyMissing)
-    {
-        // The value must be present in the session.
-        throw badRequest(`${key} must be present in the session.`);
-    }
-
-    return null;
+    // Return the value.
+    return value;
 }
 
 
@@ -56,7 +45,7 @@ function takeAttribute(
  * Authenticate a user with the login ID and password contained in the
  * request body.
  */
-function authenticateUser(session: Map<string, any>, reqBody: any): User | null
+function authenticateUser(session: Map<string, any>, reqBody: any)
 {
     // Extract login credentials from the request.
     const loginId  = reqBody['loginId'] || null;
@@ -67,12 +56,12 @@ function authenticateUser(session: Map<string, any>, reqBody: any): User | null
 
     if (loginUser)
     {
-        // Set the user info to the session.
+        // Save the user info in the session.
         session.set('user', loginUser);
+
+        // Save the authentication time in the session.
         session.set('authTime', new Date());
     }
-
-    return loginUser;
 }
 
 
@@ -81,7 +70,7 @@ function authenticateUser(session: Map<string, any>, reqBody: any): User | null
  * If it was not found in the session, this method tries to look up
  * user info using user credentials contained in the request body.
  */
-function getUser(session: Map<string, any>, reqBody: any): User | null
+function authenticateUserIfNecessary(session: Map<string, any>, reqBody: any)
 {
     // Look up the user in the session to see if they're already logged in.
     const sessionUser: User | undefined = session.get('user');
@@ -92,6 +81,17 @@ function getUser(session: Map<string, any>, reqBody: any): User | null
     // Authenticate a user with the user credentials (ID and password)
     // contained in the request body.
     return authenticateUser(session, reqBody);
+}
+
+
+/**
+ * Check if the client application was authorized by the end-user.
+ */
+function isClientAuthorized(reqBody: { [key: string]: string })
+{
+    // If the user pressed "Authorize" button, the request contains an
+    // "authorized" parameter.
+    return 'authorized' in reqBody;
 }
 
 
@@ -111,38 +111,34 @@ export class AuthorizationDecisionEndpoint extends BaseEndpoint
      */
     public async post()
     {
-        await this.process(<Task>{ execute: async () => {
-            // Ensure the content type of the request is 'application/x-www-form-urlencoded'.
-            this.ensureContentType(ContentType.APPLICATION_FORM_URLENCODED);
-
+        await this.processForApplicationFormUrlEncoded(async () => {
             // The request body.
-            const reqBody = this.context.reqBody as { [key: string]: string };
+            const reqBody = this.getRequestBodyAsObject();
 
             // The existing session.
-            const session = this.context.data.get('session');
-
-            // The parameters passed to the handler.
-            const params: Params = takeAttribute(session, 'params', true);
+            const session = this.getSession();
 
             // The end-user who authorized or denied the client application's
             // request.
-            const user: User | null = getUser(session, reqBody);
+            authenticateUserIfNecessary(session, reqBody);
 
-            // The time when the end-user was authenticated.
-            const authTime: Date | null = session.get('authTime');
+            // Check if the client application is authorized or not by
+            // the end-user.
+            const authorized = isClientAuthorized(reqBody);
 
-            // The ID Token claims requested by the client application.
-            // The value is a JSON string.
-            const idTokenClaims = params.idTokenClaims || null;
+            // The parameters passed to the handler.
+            const params = takeAttribute(session, 'params') as Params;
 
-            // The list of ACRs (Authentication Context Class References)
-            // requested by the client application.
-            const acrs: string[] | null = takeAttribute(session, 'acrs');
+            if (!params)
+            {
+                // The key must be present in the session but no such key exists
+                // in the session.
+                return badRequest("'params' must be present in the session.");
+            }
 
             // Handle the request.
-            return await new Handler(
-                await this.getDefaultApi(), new SpiImpl(reqBody, user, authTime, idTokenClaims, acrs)
-            ).handle(params);
-        }});
+            return await new Handler(this.api, new SpiImpl(session, authorized))
+                .handle(params);
+        });
     }
 }

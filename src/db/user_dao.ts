@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 import { Address } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 import { UserEntity } from './user_entity.ts';
 
 
 /**
- * Create a UserEntity object.
+ * Create a `UserEntity` object.
  */
 function createUserEntity(
     subject: string, loginId: string, password: string, name: string,
@@ -25,15 +26,15 @@ function createUserEntity(
 {
     const ue = new UserEntity();
 
-    ue.subject = subject;
-    ue.loginId = loginId;
-    ue.password = password;
-    ue.name = name;
-    ue.email = email;
-    ue.phoneNumber = phoneNumber;
-    ue.address = new Address();
+    ue.subject         = subject;
+    ue.loginId         = loginId;
+    ue.password        = password;
+    ue.name            = name;
+    ue.email           = email;
+    ue.phoneNumber     = phoneNumber;
+    ue.address         = new Address();
     ue.address.country = country;
-    ue.phoneNumber = phoneNumber;
+    ue.phoneNumber     = phoneNumber;
 
     return ue;
 }
@@ -88,14 +89,19 @@ function get(condition: SearchCondition): UserEntity | null
 }
 
 
+/**
+ * Data Access Object for user information.
+ */
 export class UserDao
 {
     /**
      * Search a user with the given login ID and password.
      *
-     * @param loginId - The login ID of a user.
+     * @param loginId
+     *         The login ID of a user.
      *
-     * @param password - The password of a user.
+     * @param password
+     *         The password of a user.
      *
      * @returns A `UserEntity` object representing a user who has the given
      *          credentials or `null` if no user has the credentials.
