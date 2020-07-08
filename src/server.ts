@@ -13,10 +13,10 @@
 // limitations under the License.
 
 
+import { AuthleteApiFactory } from 'https://deno.land/x/authlete_deno/mod.ts';
 import { Session } from 'https://deno.land/x/fen/process/session.ts';
 import { Server } from 'https://deno.land/x/fen/server.ts';
 import { Router } from 'https://deno.land/x/fen/tool/router.ts';
-import { AuthleteApiFactory } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 import { AuthorizationDecisionEndpoint } from './endpoint/authorization_decision_endpoint.ts';
 import { AuthorizationEndpoint } from './endpoint/authorization_endpoint.ts';
 import { ConfigurationEndpoint } from './endpoint/configuration_endpoint.ts';

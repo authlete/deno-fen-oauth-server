@@ -13,8 +13,11 @@
 // limitations under the License.
 
 
+import {
+    AuthorizationDecisionHandler, AuthorizationPageModel, AuthorizationRequest, AuthorizationRequestErrorHandler,
+    AuthorizationResponse, isEmpty, isUndefined, NoInteractionHandler, normalizeParameters, okHtml, Prompt, User
+} from 'https://deno.land/x/authlete_deno/mod.ts';
 import { renderFileToString } from 'https://deno.land/x/dejs@0.7.0/mod.ts';
-import { AuthorizationDecisionHandler, AuthorizationPageModel, AuthorizationRequest, AuthorizationRequestErrorHandler, AuthorizationResponse, isEmpty, isUndefined, NoInteractionHandler, normalizeParameters, okHtml, Prompt, User } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 import { NoInteractionHandlerSpiImpl } from '../impl/no_interaction_handler_spi_impl.ts';
 import { BaseEndpoint } from './base_endpoint.ts';
 import Action = AuthorizationResponse.Action;

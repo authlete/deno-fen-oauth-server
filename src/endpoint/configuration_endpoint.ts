@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-import { ConfigurationRequestHandler as Handler } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { ConfigurationRequestHandler as Handler } from 'https://deno.land/x/authlete_deno/mod.ts';
 import { BaseEndpoint } from './base_endpoint.ts';
 
 

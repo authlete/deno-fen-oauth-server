@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-import { Address, isEmpty, StandardClaims, User } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { Address, isEmpty, StandardClaims, User } from 'https://deno.land/x/authlete_deno/mod.ts';
 
 
 /**

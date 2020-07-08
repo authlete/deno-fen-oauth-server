@@ -14,8 +14,8 @@
 
 
 import { Response } from 'https://deno.land/std/http/server.ts';
+import { AuthleteApi, badRequest, ContentType, internalServerError } from 'https://deno.land/x/authlete_deno/mod.ts';
 import { IContext } from 'https://deno.land/x/fen/server.ts';
-import { AuthleteApi, badRequest, ContentType, internalServerError } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
 
 
 /**

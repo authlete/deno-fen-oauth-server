@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-import { NoInteractionHandlerSpi } from 'https://github.com/authlete/authlete-deno/raw/master/mod.ts';
+import { NoInteractionHandlerSpi } from 'https://deno.land/x/authlete_deno/mod.ts';
 import { AuthorizationRequestHandlerSpiImpl } from './authorization_request_handler_spi_impl.ts';
 
 
