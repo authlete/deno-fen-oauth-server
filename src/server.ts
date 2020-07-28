@@ -45,6 +45,7 @@ router.post('/api/introspection',               async (context) => { await new I
 router.post('/api/revocation',                  async (context) => { await new RevocationEndpoint(api, context).post(); });
 router.get('/api/jwks',                         async (context) => { await new JwksEndpoint(api, context).get(); });
 router.get('/.well-known/openid-configuration', async (context) => { await new ConfigurationEndpoint(api, context).get(); });
+router.get('/favicon.ico',                      async (context) => { /** No favicon is provided by this implementation. */ });
 
 // Controller.
 server.setController(router.controller);
