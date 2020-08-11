@@ -13,9 +13,9 @@
 // limitations under the License.
 
 
-import { Response } from 'https://deno.land/std/http/server.ts';
-import { AuthleteApi, badRequest, ContentType, internalServerError } from 'https://deno.land/x/authlete_deno/mod.ts';
-import { IContext } from 'https://deno.land/x/fen/server.ts';
+import { Response } from 'https://deno.land/std@0.64.0/http/server.ts';
+import { AuthleteApi, badRequest, ContentType, internalServerError } from 'https://deno.land/x/authlete_deno@v1.2.0/mod.ts';
+import { IContext } from 'https://deno.land/x/fen@v0.8.0/server.ts';
 
 
 /**

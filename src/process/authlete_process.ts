@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-import { IContext } from 'https://deno.land/x/fen/server.ts';
+import { IContext } from 'https://deno.land/x/fen@v0.8.0/server.ts';
 
 
 /**

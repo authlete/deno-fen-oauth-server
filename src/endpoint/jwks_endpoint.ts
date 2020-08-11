@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-import { JwksRequestHandler as Handler } from 'https://deno.land/x/authlete_deno/mod.ts';
+import { JwksRequestHandler as Handler } from 'https://deno.land/x/authlete_deno@v1.2.0/mod.ts';
 import { BaseEndpoint } from './base_endpoint.ts';
 
 

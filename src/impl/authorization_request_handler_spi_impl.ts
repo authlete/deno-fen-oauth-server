@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-import { AuthorizationRequestHandlerSpiAdapter } from 'https://deno.land/x/authlete_deno/mod.ts';
+import { AuthorizationRequestHandlerSpiAdapter } from 'https://deno.land/x/authlete_deno@v1.2.0/mod.ts';
 import { UserEntity } from '../db/user_entity.ts';
 
 

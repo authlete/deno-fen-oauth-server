@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-import { TokenRequestHandlerSpiAdapter } from 'https://deno.land/x/authlete_deno/mod.ts';
+import { TokenRequestHandlerSpiAdapter } from 'https://deno.land/x/authlete_deno@v1.2.0/mod.ts';
 import { UserDao } from '../db/user_dao.ts';
 
 

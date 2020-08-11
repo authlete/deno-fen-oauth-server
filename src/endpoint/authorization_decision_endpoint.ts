@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-import { AuthorizationDecisionHandler as Handler, badRequest, User } from 'https://deno.land/x/authlete_deno/mod.ts';
+import { AuthorizationDecisionHandler as Handler, badRequest, User } from 'https://deno.land/x/authlete_deno@v1.2.0/mod.ts';
 import { UserDao } from '../db/user_dao.ts';
 import { AuthorizationDecisionHandlerSpiImpl as SpiImpl } from '../impl/authorization_decision_handler_spi_impl.ts';
 import { BaseEndpoint } from './base_endpoint.ts';

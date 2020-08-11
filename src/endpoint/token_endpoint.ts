@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-import { TokenRequestHandler as Handler } from 'https://deno.land/x/authlete_deno/mod.ts';
+import { TokenRequestHandler as Handler } from 'https://deno.land/x/authlete_deno@v1.2.0/mod.ts';
 import { TokenRequestHandlerSpiImpl as SpiImpl } from '../impl/token_request_handler_spi_impl.ts';
 import { BaseEndpoint } from './base_endpoint.ts';
 import Params = Handler.Params;
