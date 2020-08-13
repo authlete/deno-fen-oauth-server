@@ -7,7 +7,7 @@
 [OAuth 2.0][RFC6749] と [OpenID Connect][OIDC] をサポートする認可サーバーの Deno
 による実装です。
 
-この実装は [Fen][Fen] フレームワークと [authlete-deno-library][AuthleteDeno]
+この実装は [Fen][Fen] フレームワークと [authlete-deno][AuthleteDeno] ライブラリ
 を用いて書かれています。
 
 ライセンス
@@ -110,6 +110,7 @@ ID で置き換えてください。クライアントアプリケーション�
 
 - [Authlete][Authlete] - Authlete ホームページ
 - [authlete-deno][AuthleteDeno] - Deno 用 Authlete ライブラリ
+- [deno-fen-resource-server][DenoFenResourceServer] - リソースサーバー実装
 
 コンタクト
 ----------
@@ -129,6 +130,7 @@ ID で置き換えてください。クライアントアプリケーション�
 [AuthleteOverview]:       https://www.authlete.com/developers/overview/
 [AuthleteDeno]:           https://github.com/authlete/authlete-deno
 [AuthleteSignUp]:         https://so.authlete.com/accounts/signup
+[DenoFenResourceServer]:  https://github.com/authlete/deno-fen-resource-server
 [DeveloperConsole]:       https://www.authlete.com/developers/cd_console/
 [Fen]:                    https://github.com/fen-land/deno-fen
 [ImplicitFlow]:           https://tools.ietf.org/html/rfc6749#section-4.2

@@ -1,4 +1,4 @@
-Authorization Server Implementation for Deno
+Authorization Server Implementation in Deno
 =============================================
 
 Overview
@@ -8,7 +8,7 @@ This is an authorization server implementation for Deno that supports
 [OAuth 2.0][RFC6749] and [OpenID Connect][OIDC].
 
 This implementation is written using [Fen][Fen] framework and
-[authlete-deno-library][AuthleteDeno].
+[authlete-deno][AuthleteDeno] library.
 
 License
 -------
@@ -111,6 +111,7 @@ See Also
 
 - [Authlete][Authlete] - Authlete Home Page
 - [authlete-deno][AuthleteDeno] - Authlete Library for Deno
+- [deno-fen-resource-server][DenoFenResourceServer] - Resource Server Implementation
 
 Contact
 -------
@@ -130,6 +131,7 @@ Contact Form : https://www.authlete.com/contact/
 [AuthleteOverview]:       https://www.authlete.com/developers/overview/
 [AuthleteDeno]:           https://github.com/authlete/authlete-deno
 [AuthleteSignUp]:         https://so.authlete.com/accounts/signup
+[DenoFenResourceServer]:  https://github.com/authlete/deno-fen-resource-server
 [DeveloperConsole]:       https://www.authlete.com/developers/cd_console/
 [Fen]:                    https://github.com/fen-land/deno-fen
 [ImplicitFlow]:           https://tools.ietf.org/html/rfc6749#section-4.2
