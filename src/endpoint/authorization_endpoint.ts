@@ -17,7 +17,7 @@ import {
     AuthorizationDecisionHandler, AuthorizationPageModel, AuthorizationRequest, AuthorizationRequestErrorHandler,
     AuthorizationResponse, isEmpty, isUndefined, NoInteractionHandler, normalizeParameters, okHtml, Prompt, User
 } from 'https://deno.land/x/authlete_deno@v1.2.0/mod.ts';
-import { renderFileToString } from 'https://deno.land/x/dejs@0.8.0/mod.ts';
+import { renderFileToString } from 'https://deno.land/x/dejs@0.9.3/mod.ts';
 import { NoInteractionHandlerSpiImpl } from '../impl/no_interaction_handler_spi_impl.ts';
 import { BaseEndpoint } from './base_endpoint.ts';
 import Action = AuthorizationResponse.Action;
